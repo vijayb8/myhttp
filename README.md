@@ -1,12 +1,13 @@
 # myhttp
 
-#building
+## building
 
 go build
 
-#Run Sample
+## Run Sample
 
 ./md5 google.com
 
-#Run test
+## Run test
+
 go test
