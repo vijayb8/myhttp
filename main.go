@@ -10,22 +10,20 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sync"
 )
 
-func getMD5(url string, w chan string) {
+func getMD5(url string) string{
 	resp, err := http.Get(url)
 	if err != nil {
 		//returning empty string
-		w <- ""
-		return
+		return ""
 	}
 	content, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		w <- ""
-		return
+		return ""
 	}
-	w <- getHash(content)
-	return
+	return getHash(content)
 }
 
 func getHash(content []byte) string {
@@ -48,21 +46,24 @@ func main(){
 	}
 	maxP := flag.Int("parallel", 10, "to prevent exhausting local resources")
 	flag.Parse()
-	ch := make(chan string, *maxP)
+	sem := make(chan struct{}, *maxP)
 	result := map[string]string{}
-	waitForAll := make(chan bool)
-	go func() {
-		for i := 1; i < len(os.Args); i++ {
+	var wg sync.WaitGroup
+	for i := 1; i < len(os.Args); i++ {
+		wg.Add(1)
+		sem <- struct {}{}
+		go func(i int) {
+			defer wg.Done()
 			validUrl := getValidUrl(os.Args[i])
-			getMD5(validUrl, ch)
-			hContent := <- ch
+			hContent := getMD5(validUrl)
 			if hContent != "" {
 				result[validUrl] = hContent
 			}
-		}
-		waitForAll <- true
-	}()
-	<-waitForAll
+			//release sem
+			<- sem
+		}(i)
+	}
+	wg.Wait()
 	for k,v := range result {
 		fmt.Println(k, v)
 	}
