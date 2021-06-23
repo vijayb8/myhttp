@@ -6,15 +6,12 @@ import (
 )
 
 func Test_getMD5(t *testing.T) {
-	ch := make(chan string, 1)
 	t.Run("not valid url", func(t *testing.T) {
-		getMD5("google.com", ch)
-		resp := <- ch
+		resp := getMD5("google.com")
 		assert.Equal(t, resp, "")
 	})
 	t.Run("valid url", func(t *testing.T) {
-		getMD5("http://google.com", ch)
-		resp := <- ch
+		resp := getMD5("http://google.com")
 		//check if the size is 32
 		assert.Equal(t, len(resp), 32)
 	})
